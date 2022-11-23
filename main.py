@@ -1,39 +1,45 @@
+import sqlite3
 import sys
 
-from random import randint
-from PyQt5.QtGui import QPainter, QColor
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from ui_file import Ui_MainWindow
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
 
 
-class MyWidget(QMainWindow, Ui_MainWindow):
+class DBSample(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.do_paint = False
-        self.setupUi(self)
-        self.pushButton.clicked.connect(self.paint)
+        uic.loadUi('UI1.ui', self)
+        self.connection = sqlite3.connect("coffee.sqlite")
+        # self.pushButton.clicked.connect(self.select_data)
+        # # По умолчанию будем выводить все данные из таблицы films
+        # self.textEdit.setPlainText("SELECT * FROM films")
+        self.select_data()
 
-    def paintEvent(self, event):
-        if self.do_paint:
-            qp = QPainter()
-            qp.begin(self)
-            self.draw_round(qp)
-            qp.end()
+    def select_data(self):
+        # Получим результат запроса,
+        # который ввели в текстовое поле
+        query = "SELECT * FROM coffee"
+        res = self.connection.cursor().execute(query).fetchall()
+        # Заполним размеры таблицы
+        self.tableWidget.setColumnCount(7)
+        self.tableWidget.setRowCount(100)
+        # Заполняем таблицу элементами
+        for i, row in enumerate(res):
+            self.tableWidget.setRowCount(
+                self.tableWidget.rowCount() + 1)
+            for j, elem in enumerate(row):
+                self.tableWidget.setItem(
+                    i, j, QTableWidgetItem(str(elem)))
 
-    def paint(self):
-        self.do_paint = True
-        self.repaint()
-
-    def draw_round(self, qp):
-        qp.setBrush(QColor(randint(0, 255), randint(0, 255), randint(0, 255)))
-        x = randint(10, 250)
-        y = randint(10, 390)
-        qp.drawEllipse(x, x, y, y)
+    def closeEvent(self, event):
+        # При закрытии формы закроем и наше соединение
+        # с базой данных
+        self.connection.close()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = MyWidget()
+    ex = DBSample()
     ex.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
